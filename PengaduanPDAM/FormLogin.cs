@@ -20,12 +20,12 @@ namespace PengaduanPDAM
         {
             InitializeComponent();
 
-            BtnLogin.Click += BtnLogin_Click;      // LOGIN
-            button2.Click += BtnCekKoneksi_Click; // CEK KONEKSI
+            BtnLogin.Click += BtnLogin_Click;
+            button2.Click += BtnCekKoneksi_Click;
             textBox2.PasswordChar = '*';
         }
 
-        // ================= LOGIN =================
+
         private void BtnLogin_Click(object sender, EventArgs e)
         {
             string email = textBox1.Text.Trim();
@@ -43,7 +43,7 @@ namespace PengaduanPDAM
                 {
                     conn.Open();
 
-                    // ===== ADMIN =====
+
                     string queryAdmin = @"
                         SELECT AdminID 
                         FROM AdminLogin 
@@ -69,7 +69,7 @@ namespace PengaduanPDAM
                         }
                     }
 
-                    // ===== USER =====
+
                     string queryUser = @"
                         SELECT UserID 
                         FROM UserLogin 
@@ -104,7 +104,7 @@ namespace PengaduanPDAM
             }
         }
 
-        // ================= CEK KONEKSI =================
+
         private void BtnCekKoneksi_Click(object sender, EventArgs e)
         {
             try
@@ -121,7 +121,7 @@ namespace PengaduanPDAM
             }
         }
 
-        // kosong biar aman
+
         private void label1_Click(object sender, EventArgs e) { }
         private void label3_Click(object sender, EventArgs e) { }
     }
