@@ -83,4 +83,30 @@ namespace PengaduanPDAM
             }
             catch { }
         }
+        private void PanelLaporan_Click(object sender, EventArgs e)
+        {
+            FormPengaduan formPengaduan = new FormPengaduan();
+            formPengaduan.ShowDialog();
+            LoadTotalLaporan(); // Refresh total when returning
+        }
+
+        private void PanelRiwayat_Click(object sender, EventArgs e)
+        {
+            FormRiwayat formRiwayat = new FormRiwayat();
+            formRiwayat.ShowDialog();
+        }
+
+        private void BtnLogout_Click(object sender, EventArgs e)
+        {
+            SessionManager.ClearSession();
+            FormLogin login = new FormLogin();
+            login.Show();
+            this.Close();
+        }
+
+        private void label2_Click(object sender, EventArgs e) { }
+        private void label4_Click(object sender, EventArgs e) { }
+    }
+}
+
 
