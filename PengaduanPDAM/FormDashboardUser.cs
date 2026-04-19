@@ -60,3 +60,27 @@ namespace PengaduanPDAM
             lblTotalLaporan.Location = new Point(20, 80);
             this.Controls.Add(lblTotalLaporan);
         }
+        private void FormDashboardUser_Load(object sender, EventArgs e)
+        {
+            LoadTotalLaporan();
+        }
+
+        private void LoadTotalLaporan()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    string query = "SELECT COUNT(*) FROM LaporanPengaduan WHERE UserID = @UserID";
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
+                        int total = Convert.ToInt32(cmd.ExecuteScalar());
+                        lblTotalLaporan.Text = $"Total Laporan Anda: {total}";
+                    }
+                }
+            }
+            catch { }
+        }
+
