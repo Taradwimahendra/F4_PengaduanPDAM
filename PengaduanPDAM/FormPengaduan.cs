@@ -42,6 +42,19 @@ namespace PengaduanPDAM
             pictureBox1.BorderStyle = BorderStyle.FixedSingle;
             this.Controls.Add(pictureBox1);
         }
+        private void BtnBrowse_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp";
+                ofd.Title = "Pilih Bukti Lampiran";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    selectedImagePath = ofd.FileName;
+                    pictureBox1.Image = Image.FromFile(selectedImagePath);
+                }
+            }
+        }
 
 
 
