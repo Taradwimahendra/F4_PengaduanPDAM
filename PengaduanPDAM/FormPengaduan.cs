@@ -85,6 +85,11 @@ namespace PengaduanPDAM
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal memuat kategori: " + ex.Message, "Error");
+            }
+        }
 
 
 
