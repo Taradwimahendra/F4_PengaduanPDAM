@@ -28,5 +28,21 @@ namespace PengaduanPDAM
 
 
             textBox1.Text = SessionManager.Email;
+            btnBrowse = new Button();
+            btnBrowse.Text = "Pilih Lampiran Gambar";
+            btnBrowse.AutoSize = true;
+            btnBrowse.Location = new Point(400, 80);
+            btnBrowse.Click += BtnBrowse_Click;
+            this.Controls.Add(btnBrowse);
+
+            pictureBox1 = new PictureBox();
+            pictureBox1.Location = new Point(400, 110);
+            pictureBox1.Size = new Size(200, 200);
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.BorderStyle = BorderStyle.FixedSingle;
+            this.Controls.Add(pictureBox1);
+        }
+
+
 
 
