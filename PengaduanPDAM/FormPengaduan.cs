@@ -122,6 +122,32 @@ namespace PengaduanPDAM
                         cmd.Parameters.AddWithValue("@Judul", textBox5.Text);
                         cmd.Parameters.AddWithValue("@Deskripsi", textBox6.Text);
 
+                        int newLaporanId = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        // Also insert first history
+                        string queryRiwayat = "INSERT INTO RiwayatStatus (LaporanID, StatusPengaduan, Keterangan) VALUES (@LaporanID, 'diproses', 'Laporan baru dibuat')";
+                        using (SqlCommand cmdRiwayat = new SqlCommand(queryRiwayat, conn))
+                        {
+                            cmdRiwayat.Parameters.AddWithValue("@LaporanID", newLaporanId);
+                            cmdRiwayat.ExecuteNonQuery();
+                        }
+
+                        // Save image if uploaded
+                        if (!string.IsNullOrEmpty(selectedImagePath))
+                        {
+                            string ext = Path.GetExtension(selectedImagePath);
+                            string newFileName = "Lampiran_" + newLaporanId + ext;
+                            string targetDir = Path.Combine(Application.StartupPath, "Lampiran");
+
+                            if (!Directory.Exists(targetDir))
+                            {
+                                Directory.CreateDirectory(targetDir);
+                            }
+
+                            string targetPath = Path.Combine(targetDir, newFileName);
+                            File.Copy(selectedImagePath, targetPath, true);
+
+
 
 
 
