@@ -19,3 +19,14 @@ namespace PengaduanPDAM
         private Button btnBrowse;
         private PictureBox pictureBox1;
         private string selectedImagePath = "";
+        public FormPengaduan()
+        {
+            InitializeComponent();
+            this.Load += FormPengaduan_Load;
+            button1.Click += BtnSimpan_Click;
+            button2.Click += BtnKembali_Click;
+
+
+            textBox1.Text = SessionManager.Email;
+
+
