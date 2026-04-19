@@ -146,6 +146,16 @@ namespace PengaduanPDAM
 
                             string targetPath = Path.Combine(targetDir, newFileName);
                             File.Copy(selectedImagePath, targetPath, true);
+                            string queryLampiran = "INSERT INTO Lampiran (LaporanID, NamaFile, PathFile) VALUES (@LaporanID, @NamaFile, @PathFile)";
+                            using (SqlCommand cmdLampiran = new SqlCommand(queryLampiran, conn))
+                            {
+                                cmdLampiran.Parameters.AddWithValue("@LaporanID", newLaporanId);
+                                cmdLampiran.Parameters.AddWithValue("@NamaFile", newFileName);
+                                cmdLampiran.Parameters.AddWithValue("@PathFile", targetPath);
+                                cmdLampiran.ExecuteNonQuery();
+                            }
+                        }
+                    }
 
 
 
