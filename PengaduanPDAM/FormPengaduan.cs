@@ -90,6 +90,18 @@ namespace PengaduanPDAM
                 MessageBox.Show("Gagal memuat kategori: " + ex.Message, "Error");
             }
         }
+        private void BtnSimpan_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(textBox1.Text) ||
+                string.IsNullOrWhiteSpace(textBox2.Text) ||
+                string.IsNullOrWhiteSpace(textBox3.Text) ||
+                comboBox1.SelectedValue == null ||
+                string.IsNullOrWhiteSpace(textBox5.Text) ||
+                string.IsNullOrWhiteSpace(textBox6.Text))
+            {
+                MessageBox.Show("Semua kolom harus diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
 
 
