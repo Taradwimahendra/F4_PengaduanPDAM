@@ -55,6 +55,10 @@ namespace PengaduanPDAM
                 }
             }
         }
+        private void FormPengaduan_Load(object sender, EventArgs e)
+        {
+            LoadKategori();
+
 
 
 
