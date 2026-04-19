@@ -95,6 +95,76 @@ namespace PengaduanPDAM
                 MessageBox.Show("Gagal memuat kategori: " + ex.Message, "Error");
             }
         }
+        private void BtnSimpan_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(textBox1.Text) ||
+                string.IsNullOrWhiteSpace(textBox2.Text) ||
+                string.IsNullOrWhiteSpace(textBox3.Text) ||
+                comboBox1.SelectedValue == null ||
+                string.IsNullOrWhiteSpace(textBox5.Text) ||
+                string.IsNullOrWhiteSpace(textBox6.Text))
+            {
+                MessageBox.Show("Semua kolom harus diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    string query = @"INSERT INTO LaporanPengaduan 
+                                    (UserID, NamaLengkap, NoTelepon, Alamat, KategoriID, Judul_Laporan, Deskripsi_Laporan) 
+                                    VALUES (@UserID, @Nama, @Telp, @Alamat, @KatID, @Judul, @Deskripsi);
+                                    SELECT SCOPE_IDENTITY();";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
+                        cmd.Parameters.AddWithValue("@Nama", textBox1.Text);
+                        cmd.Parameters.AddWithValue("@Telp", textBox2.Text);
+                        cmd.Parameters.AddWithValue("@Alamat", textBox3.Text);
+                        cmd.Parameters.AddWithValue("@KatID", comboBox1.SelectedValue);
+                        cmd.Parameters.AddWithValue("@Judul", textBox5.Text);
+                        cmd.Parameters.AddWithValue("@Deskripsi", textBox6.Text);
+
+                        int newLaporanId = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        // Also insert first history
+                        string queryRiwayat = "INSERT INTO RiwayatStatus (LaporanID, StatusPengaduan, Keterangan) VALUES (@LaporanID, 'diproses', 'Laporan baru dibuat')";
+                        using (SqlCommand cmdRiwayat = new SqlCommand(queryRiwayat, conn))
+                        {
+                            cmdRiwayat.Parameters.AddWithValue("@LaporanID", newLaporanId);
+                            cmdRiwayat.ExecuteNonQuery();
+                        }
+
+                        // Save image if uploaded
+                        if (!string.IsNullOrEmpty(selectedImagePath))
+                        {
+                            string ext = Path.GetExtension(selectedImagePath);
+                            string newFileName = "Lampiran_" + newLaporanId + ext;
+                            string targetDir = Path.Combine(Application.StartupPath, "Lampiran");
+
+                            if (!Directory.Exists(targetDir))
+                            {
+                                Directory.CreateDirectory(targetDir);
+                            }
+
+                            string targetPath = Path.Combine(targetDir, newFileName);
+                            File.Copy(selectedImagePath, targetPath, true);
+
+                            string queryLampiran = "INSERT INTO Lampiran (LaporanID, NamaFile, PathFile) VALUES (@LaporanID, @NamaFile, @PathFile)";
+                            using (SqlCommand cmdLampiran = new SqlCommand(queryLampiran, conn))
+                            {
+                                cmdLampiran.Parameters.AddWithValue("@LaporanID", newLaporanId);
+                                cmdLampiran.Parameters.AddWithValue("@NamaFile", newFileName);
+                                cmdLampiran.Parameters.AddWithValue("@PathFile", targetPath);
+                                cmdLampiran.ExecuteNonQuery();
+                            }
+                        }
+                    }
+
+
 
 
 
