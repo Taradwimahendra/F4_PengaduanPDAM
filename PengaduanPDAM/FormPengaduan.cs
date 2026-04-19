@@ -156,6 +156,34 @@ namespace PengaduanPDAM
                             }
                         }
                     }
+                    MessageBox.Show("Pengaduan beserta lampiran berhasil disimpan!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    this.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal menyimpan pengaduan: " + ex.Message, "Error");
+            }
+        }
+
+        private void BtnKembali_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void label4_Click(object sender, EventArgs e) { }
+        private void label5_Click(object sender, EventArgs e) { }
+    }
+}
+
+
+
+
+
+
+
+
+
 
 
 
