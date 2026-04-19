@@ -59,6 +59,14 @@ namespace PengaduanPDAM
         {
             LoadKategori();
 
+            if (textBox6 != null)
+            {
+                btnBrowse.Location = new Point(textBox6.Right + 20, textBox6.Top);
+                pictureBox1.Location = new Point(btnBrowse.Left, btnBrowse.Bottom + 10);
+            }
+        }
+
+
 
 
 
