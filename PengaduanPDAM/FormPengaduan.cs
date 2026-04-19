@@ -102,6 +102,27 @@ namespace PengaduanPDAM
                 MessageBox.Show("Semua kolom harus diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    string query = @"INSERT INTO LaporanPengaduan 
+                                    (UserID, NamaLengkap, NoTelepon, Alamat, KategoriID, Judul_Laporan, Deskripsi_Laporan) 
+                                    VALUES (@UserID, @Nama, @Telp, @Alamat, @KatID, @Judul, @Deskripsi);
+                                    SELECT SCOPE_IDENTITY();";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
+                        cmd.Parameters.AddWithValue("@Nama", textBox1.Text);
+                        cmd.Parameters.AddWithValue("@Telp", textBox2.Text);
+                        cmd.Parameters.AddWithValue("@Alamat", textBox3.Text);
+                        cmd.Parameters.AddWithValue("@KatID", comboBox1.SelectedValue);
+                        cmd.Parameters.AddWithValue("@Judul", textBox5.Text);
+                        cmd.Parameters.AddWithValue("@Deskripsi", textBox6.Text);
+
+
 
 
 
