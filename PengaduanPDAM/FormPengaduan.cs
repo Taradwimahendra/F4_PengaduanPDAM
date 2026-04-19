@@ -65,6 +65,26 @@ namespace PengaduanPDAM
                 pictureBox1.Location = new Point(btnBrowse.Left, btnBrowse.Bottom + 10);
             }
         }
+        private void LoadKategori()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand("SELECT KategoriID, NamaKategori FROM KategoriPengaduan", conn))
+                    {
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+
+                        comboBox1.DataSource = dt;
+                        comboBox1.DisplayMember = "NamaKategori";
+                        comboBox1.ValueMember = "KategoriID";
+                        comboBox1.SelectedIndex = -1;
+                    }
+                }
+            }
 
 
 
