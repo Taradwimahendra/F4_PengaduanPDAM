@@ -108,7 +108,6 @@ namespace PengaduanPDAM
             this.label3.Size = new System.Drawing.Size(104, 45);
             this.label3.TabIndex = 0;
             this.label3.Text = "Login";
-            this.label3.Click += new System.EventHandler(this.label3_Click_1);
             // 
             // label1
             // 

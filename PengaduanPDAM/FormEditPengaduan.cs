@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.Windows.Forms;
 
@@ -46,9 +47,9 @@ namespace PengaduanPDAM
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    string query = "UPDATE Pengaduan SET Judul_Laporan=@Judul, KategoriID=@KatID, Deskripsi_Laporan=@Deskripsi WHERE PengaduanID=@ID";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (SqlCommand cmd = new SqlCommand("sp_UpdatePengaduan", conn))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@Judul", judul);
                         cmd.Parameters.AddWithValue("@KatID", katId);
                         cmd.Parameters.AddWithValue("@Deskripsi", deskripsi);

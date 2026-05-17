@@ -23,6 +23,7 @@ namespace PengaduanPDAM
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Button button2; // Edit
         private System.Windows.Forms.Button button3; // Delete
+        private System.Windows.Forms.Button btnResetData; // Reset Data
         
         // Stats
         private System.Windows.Forms.Label lblStats;
@@ -56,6 +57,7 @@ namespace PengaduanPDAM
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
+            this.btnResetData = new System.Windows.Forms.Button();
             this.bindingNavigator1 = new System.Windows.Forms.BindingNavigator(this.components);
             this.bindingNavigatorMoveFirstItem = new System.Windows.Forms.ToolStripButton();
             this.bindingNavigatorMovePreviousItem = new System.Windows.Forms.ToolStripButton();
@@ -171,6 +173,7 @@ namespace PengaduanPDAM
             this.panelMain.Controls.Add(this.comboBox1);
             this.panelMain.Controls.Add(this.button2);
             this.panelMain.Controls.Add(this.button3);
+            this.panelMain.Controls.Add(this.btnResetData);
             this.panelMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelMain.Location = new System.Drawing.Point(333, 86);
             this.panelMain.Margin = new System.Windows.Forms.Padding(4);
@@ -183,7 +186,7 @@ namespace PengaduanPDAM
             this.lblStats.AutoSize = true;
             this.lblStats.Font = new System.Drawing.Font("Segoe UI Semibold", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblStats.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(41)))), ((int)(((byte)(53)))), ((int)(((byte)(65)))));
-            this.lblStats.Location = new System.Drawing.Point(40, 25);
+            this.lblStats.Location = new System.Drawing.Point(40, 45);
             this.lblStats.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblStats.Name = "lblStats";
             this.lblStats.Size = new System.Drawing.Size(377, 28);
@@ -294,6 +297,22 @@ namespace PengaduanPDAM
             this.button3.Text = "Hapus";
             this.button3.UseVisualStyleBackColor = false;
             this.button3.Click += new System.EventHandler(this.BtnDelete_Click);
+            // 
+            // btnResetData
+            // 
+            this.btnResetData.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnResetData.BackColor = System.Drawing.Color.DarkGray;
+            this.btnResetData.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnResetData.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnResetData.ForeColor = System.Drawing.Color.White;
+            this.btnResetData.Location = new System.Drawing.Point(974, 81);
+            this.btnResetData.Margin = new System.Windows.Forms.Padding(4);
+            this.btnResetData.Name = "btnResetData";
+            this.btnResetData.Size = new System.Drawing.Size(120, 33);
+            this.btnResetData.TabIndex = 9;
+            this.btnResetData.Text = "Reset Data";
+            this.btnResetData.UseVisualStyleBackColor = false;
+            this.btnResetData.Click += new System.EventHandler(this.BtnResetData_Click);
             // 
             // bindingNavigator1
             // 

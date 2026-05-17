@@ -9,6 +9,8 @@ namespace PengaduanPDAM
     public partial class FormDashboardAdmin : Form
     {
         string connString = "Data Source=TARA\\TARA;Initial Catalog=DBPengaduanPDAM;Integrated Security=True";
+        private BindingSource bindingSource = new BindingSource();
+        private DataTable dtPengaduan = new DataTable();
 
         public FormDashboardAdmin()
         {
@@ -25,6 +27,14 @@ namespace PengaduanPDAM
 
         private void FormDashboardAdmin_Load(object sender, EventArgs e)
         {
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridView1.MultiSelect = false;
+            dataGridView1.ReadOnly = true;
+            dataGridView1.AllowUserToAddRows = false;
+            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            
+            bindingNavigator1.BindingSource = bindingSource;
+
             LoadData();
             LoadStats();
         }
@@ -52,12 +62,15 @@ namespace PengaduanPDAM
                             cmd.Parameters.AddWithValue("@Search", "%" + searchQuery + "%");
                         }
 
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                         {
-                            DataTable dt = new DataTable();
-                            dt.Load(reader);
-                            dataGridView1.DataSource = dt;
-                            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                            dtPengaduan = new DataTable();
+                            da.Fill(dtPengaduan);
+                            
+                            bindingSource.DataSource = dtPengaduan;
+                            dataGridView1.DataSource = bindingSource;
+                            
+                            BindControls();
                         }
                     }
                 }
@@ -68,16 +81,15 @@ namespace PengaduanPDAM
             }
         }
 
+        private void BindControls()
+        {
+            textBox1.DataBindings.Clear();
+            textBox1.DataBindings.Add("Text", bindingSource, "Judul_Laporan");
+        }
+
         private void DataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0)
-            {
-                DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
-                if (row.Cells["Judul_Laporan"].Value != null)
-                {
-                    textBox1.Text = row.Cells["Judul_Laporan"].Value.ToString();
-                }
-            }
+            // CellClick logic removed because DataBinding automatically updates textBox1
         }
 
         private void LoadStats()
@@ -169,21 +181,17 @@ namespace PengaduanPDAM
                         {
                             conn.Open();
 
-                            // Delete dependencies first
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Lampiran WHERE PengaduanID=@ID", conn))
+                            using (SqlCommand cmd = new SqlCommand("sp_DeletePengaduan", conn))
                             {
-                                cmd.Parameters.AddWithValue("@ID", id);
-                                cmd.ExecuteNonQuery();
-                            }
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.Add("@PengaduanID", SqlDbType.Int).Value = id;
+                                int rowsAffected = cmd.ExecuteNonQuery();
 
-                            // Delete Laporan
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Pengaduan WHERE PengaduanID=@ID", conn))
-                            {
-                                cmd.Parameters.AddWithValue("@ID", id);
-                                cmd.ExecuteNonQuery();
+                                if (rowsAffected > 0)
+                                    MessageBox.Show("Data berhasil dihapus!", "Sukses");
+                                else
+                                    MessageBox.Show("Data tidak ditemukan!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             }
-
-                            MessageBox.Show("Data berhasil dihapus!", "Sukses");
                             LoadData();
                             LoadStats();
                         }
@@ -197,6 +205,40 @@ namespace PengaduanPDAM
             else
             {
                 MessageBox.Show("Pilih data laporan terlebih dahulu!", "Peringatan");
+            }
+        }
+
+        private void BtnResetData_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    string query = @"
+                        IF OBJECT_ID('dbo.Pengaduan_Backup') IS NOT NULL
+                        BEGIN
+                            DELETE FROM dbo.Lampiran;
+                            DELETE FROM dbo.Pengaduan;
+                            SET IDENTITY_INSERT dbo.Pengaduan ON;
+                            INSERT INTO dbo.Pengaduan (PengaduanID, UserID, KategoriID, Judul_Laporan, Deskripsi_Laporan, Tanggal_Pengaduan, StatusPengaduan)
+                            SELECT PengaduanID, UserID, KategoriID, Judul_Laporan, Deskripsi_Laporan, Tanggal_Pengaduan, StatusPengaduan 
+                            FROM dbo.Pengaduan_Backup;
+                            SET IDENTITY_INSERT dbo.Pengaduan OFF;
+                        END";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    MessageBox.Show("Data berhasil direset dari backup!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    LoadStats();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Reset gagal: " + ex.Message, "Error");
             }
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
 using System.IO;
@@ -69,80 +70,3 @@ namespace PengaduanPDAM
             string judul = txtJudul.Text.Trim();
             string kategori = cmbKategori.Text;
             string deskripsi = txtDeskripsi.Text.Trim();
-
-            if (string.IsNullOrEmpty(namaLengkap) || string.IsNullOrEmpty(judul) || string.IsNullOrEmpty(kategori) || string.IsNullOrEmpty(deskripsi))
-            {
-                MessageBox.Show("Semua kolom teks harus diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            
-            if (string.IsNullOrEmpty(selectedImagePath))
-            {
-                MessageBox.Show("Harap lampirkan foto bukti laporan terlebih dahulu!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            try
-            {
-                int katId = kategori.Equals("Teknis", StringComparison.OrdinalIgnoreCase) ? 1 : 2;
-
-                using (SqlConnection conn = new SqlConnection(connString))
-                {
-                    conn.Open();
-                    string query = "INSERT INTO Pengaduan (UserID, Judul_Laporan, KategoriID, Deskripsi_Laporan, StatusPengaduan) OUTPUT INSERTED.PengaduanID VALUES (@UserID, @Judul, @KategoriID, @Deskripsi, 'diproses')";
-                    int laporanID = 0;
-
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
-                        cmd.Parameters.AddWithValue("@Judul", judul);
-                        cmd.Parameters.AddWithValue("@KategoriID", katId);
-                        cmd.Parameters.AddWithValue("@Deskripsi", deskripsi);
-                        
-                        object result = cmd.ExecuteScalar();
-                        if (result != null)
-                        {
-                            laporanID = Convert.ToInt32(result);
-                        }
-                    }
-
-                    // Save Lampiran if selected
-                    if (laporanID > 0 && !string.IsNullOrEmpty(selectedImagePath))
-                    {
-                        try
-                        {
-                            string queryLampiran = "INSERT INTO Lampiran (PengaduanID, NamaFile, PathFile) VALUES (@PengaduanID, @NamaFile, @PathFile)";
-                            using (SqlCommand cmdLampiran = new SqlCommand(queryLampiran, conn))
-                            {
-                                cmdLampiran.Parameters.AddWithValue("@PengaduanID", laporanID);
-                                cmdLampiran.Parameters.AddWithValue("@NamaFile", Path.GetFileName(selectedImagePath));
-                                cmdLampiran.Parameters.AddWithValue("@PathFile", selectedImagePath);
-                                cmdLampiran.ExecuteNonQuery();
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            // Ignore missing table gently
-                            MessageBox.Show("Pengaduan berhasil disimpan, namun lampiran gagal diunggah.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                    }
-
-                    MessageBox.Show("Pengaduan berhasil dikirim!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    
-                    // Reset Form
-                    txtNama.Clear();
-                    txtJudul.Clear();
-                    cmbKategori.SelectedIndex = -1;
-                    txtDeskripsi.Clear();
-                    pictureBox1.Image = null;
-                    lblFileName.Text = "Tidak ada file dipilih";
-                    selectedImagePath = "";
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Terjadi kesalahan saat menyimpan: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-    }
-}

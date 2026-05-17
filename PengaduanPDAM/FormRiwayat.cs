@@ -10,6 +10,8 @@ namespace PengaduanPDAM
     {
         string connString = "Data Source=TARA\\TARA;Initial Catalog=DBPengaduanPDAM;Integrated Security=True";
         private Label lblDetail;
+        private Label lblTotal;
+        private BindingSource bindingSource = new BindingSource();
 
         public FormRiwayat()
         {
@@ -28,6 +30,14 @@ namespace PengaduanPDAM
             lblDetail.Font = new Font("Segoe UI", 10F);
             lblDetail.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             this.Controls.Add(lblDetail);
+
+            lblTotal = new Label();
+            lblTotal.AutoSize = true;
+            lblTotal.Location = new Point(dataGridView1.Right - 200, dataGridView1.Bottom + 20);
+            lblTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            lblTotal.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblTotal.ForeColor = Color.DarkBlue;
+            this.Controls.Add(lblTotal);
 
             StyleDataGridView();
         }
@@ -63,37 +73,65 @@ namespace PengaduanPDAM
                     conn.Open();
                     string query = @"SELECT p.PengaduanID, p.Judul_Laporan, p.KategoriID, p.StatusPengaduan, p.Deskripsi_Laporan
                                      FROM Pengaduan p
-                                     WHERE p.UserID = @UserID";
+                                     WHERE p.UserID = " + SessionManager.UserID;
 
                     if (!string.IsNullOrEmpty(searchQuery))
                     {
-                        query += " AND p.Judul_Laporan LIKE @Search";
+                        // Simulasi SQL Injection
+                        query += " AND p.Judul_Laporan LIKE '%" + searchQuery + "%'";
                     }
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
-                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
-                        if (!string.IsNullOrEmpty(searchQuery))
-                        {
-                            cmd.Parameters.AddWithValue("@Search", "%" + searchQuery + "%");
-                        }
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                         {
                             DataTable dt = new DataTable();
-                            dt.Load(reader);
-                            dataGridView1.DataSource = dt;
+                            da.Fill(dt);
+                            bindingSource.DataSource = dt;
+                            dataGridView1.DataSource = bindingSource;
+                            bindingNavigator1.BindingSource = bindingSource;
                             dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
                         }
 
                         if (dataGridView1.Columns["Deskripsi_Laporan"] != null)
                             dataGridView1.Columns["Deskripsi_Laporan"].Visible = false;
                     }
+
+                    HitungTotal();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Gagal memuat riwayat: " + ex.Message, "Error");
+            }
+        }
+
+        private void HitungTotal()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    using (SqlCommand cmd = new SqlCommand("sp_CountPengaduanUser", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        
+                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
+
+                        SqlParameter outputParam = new SqlParameter("@Total", SqlDbType.Int);
+                        outputParam.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(outputParam);
+
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+
+                        lblTotal.Text = "Total Pengaduan: " + outputParam.Value.ToString();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal menghitung total: " + ex.Message, "Error");
             }
         }
 
@@ -179,21 +217,18 @@ namespace PengaduanPDAM
                         {
                             conn.Open();
 
-                            // Delete dependencies first
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Lampiran WHERE PengaduanID=@ID", conn))
+                            using (SqlCommand cmd = new SqlCommand("sp_DeletePengaduan", conn))
                             {
-                                cmd.Parameters.AddWithValue("@ID", id);
-                                cmd.ExecuteNonQuery();
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.Add("@PengaduanID", SqlDbType.Int).Value = id;
+                                int rowsAffected = cmd.ExecuteNonQuery();
+                                
+                                if (rowsAffected > 0)
+                                    MessageBox.Show("Riwayat berhasil dihapus secara permanen!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                else
+                                    MessageBox.Show("Data tidak ditemukan!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             }
 
-                            // Delete Laporan
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Pengaduan WHERE PengaduanID=@ID", conn))
-                            {
-                                cmd.Parameters.AddWithValue("@ID", id);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            MessageBox.Show("Riwayat berhasil dihapus secara permanen!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             LoadData();
                         }
                     }
@@ -236,6 +271,38 @@ namespace PengaduanPDAM
             else
             {
                 MessageBox.Show("Pilih data laporan terlebih dahulu!", "Peringatan");
+            }
+        }
+
+        private void btnHapusInjection_Click(object sender, EventArgs e)
+        {
+            string judul = textBox1.Text;
+
+            if (string.IsNullOrEmpty(judul))
+            {
+                MessageBox.Show("Masukkan judul terlebih dahulu!", "Peringatan");
+                return;
+            }
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    // Simulasi SQL Injection (UPDATE Semua Kolom) - Sangat Tidak Aman
+                    string query = "UPDATE Pengaduan SET Judul_Laporan = 'HACKED', Deskripsi_Laporan = 'HACKED', StatusPengaduan = 'HACKED' WHERE Judul_Laporan = '" + judul + "'";
+                    
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        MessageBox.Show($"Simulasi eksekusi Injeksi selesai. {rowsAffected} baris terubah menjadi 'HACKED'!", "SQL Injection (Simulasi)", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    LoadData();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error simulasi: " + ex.Message, "Error");
             }
         }
     }
