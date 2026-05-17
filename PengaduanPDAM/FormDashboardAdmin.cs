@@ -196,6 +196,14 @@ namespace PengaduanPDAM
                         }
                     }
 
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Gagal menghapus data: " + ex.Message, "Error");
+                    }
+                }
+            }
+
+
 
         private void BtnLogout_Click(object sender, EventArgs e)
         {
