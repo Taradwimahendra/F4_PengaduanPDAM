@@ -230,6 +230,16 @@ namespace PengaduanPDAM
                      SET IDENTITY_INSERT dbo.Pengaduan OFF;
                  END";
 
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    MessageBox.Show("Data berhasil direset dari backup!", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    LoadStats();
+                }
+            }
+
 
 
         private void BtnLogout_Click(object sender, EventArgs e)
