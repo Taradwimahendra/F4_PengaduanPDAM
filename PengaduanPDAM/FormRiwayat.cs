@@ -132,6 +132,12 @@ namespace PengaduanPDAM
                 }
             }
 
+            catch (Exception ex)
+            {
+                MessageBox.Show("Gagal menghitung total: " + ex.Message, "Error");
+            }
+        }
+
         private void BtnCari_Click(object sender, EventArgs e)
         {
             LoadData(textBox1.Text.Trim());
