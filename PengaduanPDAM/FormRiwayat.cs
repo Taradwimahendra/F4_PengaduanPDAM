@@ -118,6 +118,20 @@ namespace PengaduanPDAM
 
                         cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
 
+
+
+                        SqlParameter outputParam = new SqlParameter("@Total", SqlDbType.Int);
+                        outputParam.Direction = ParameterDirection.Output;
+                        cmd.Parameters.Add(outputParam);
+
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+
+                        lblTotal.Text = "Total Pengaduan: " + outputParam.Value.ToString();
+                    }
+                }
+            }
+
         private void BtnCari_Click(object sender, EventArgs e)
         {
             LoadData(textBox1.Text.Trim());
