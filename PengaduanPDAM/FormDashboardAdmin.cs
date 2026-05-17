@@ -242,6 +242,15 @@ namespace PengaduanPDAM
 
 
 
+            catch (Exception ex)
+            {
+                MessageBox.Show("Reset gagal: " + ex.Message, "Error");
+            }
+        }
+
+
+
+
         private void BtnLogout_Click(object sender, EventArgs e)
         {
             DialogResult dialogResult = MessageBox.Show("Apakah Anda yakin ingin logout?", "Konfirmasi Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
