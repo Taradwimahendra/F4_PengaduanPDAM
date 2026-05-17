@@ -174,6 +174,27 @@ namespace PengaduanPDAM
 
                 if (MessageBox.Show("Yakin ingin menghapus laporan ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
                 {
+                    try
+                    {
+                        using (SqlConnection conn = new SqlConnection(connString))
+                        {
+                            conn.Open();
+
+                            using (SqlCommand cmd = new SqlCommand("sp_DeletePengaduan", conn))
+                            {
+                                cmd.CommandType = CommandType.StoredProcedure;
+                                cmd.Parameters.Add("@PengaduanID", SqlDbType.Int).Value = id;
+                                int rowsAffected = cmd.ExecuteNonQuery();
+
+                                if (rowsAffected > 0)
+                                    MessageBox.Show("Data berhasil dihapus!", "Sukses");
+                                else
+                                    MessageBox.Show("Data tidak ditemukan!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            }
+                            LoadData();
+                            LoadStats();
+                        }
+                    }
 
 
         private void BtnLogout_Click(object sender, EventArgs e)
