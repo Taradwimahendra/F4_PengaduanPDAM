@@ -211,6 +211,26 @@ namespace PengaduanPDAM
 
 
 
+        private void BtnResetData_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    string query = @"
+                 IF OBJECT_ID('dbo.Pengaduan_Backup') IS NOT NULL
+                 BEGIN
+                     DELETE FROM dbo.Lampiran;
+                     DELETE FROM dbo.Pengaduan;
+                     SET IDENTITY_INSERT dbo.Pengaduan ON;
+                     INSERT INTO dbo.Pengaduan (PengaduanID, UserID, KategoriID, Judul_Laporan, Deskripsi_Laporan, Tanggal_Pengaduan, StatusPengaduan)
+                     SELECT PengaduanID, UserID, KategoriID, Judul_Laporan, Deskripsi_Laporan, Tanggal_Pengaduan, StatusPengaduan 
+                     FROM dbo.Pengaduan_Backup;
+                     SET IDENTITY_INSERT dbo.Pengaduan OFF;
+                 END";
+
+
 
         private void BtnLogout_Click(object sender, EventArgs e)
         {
