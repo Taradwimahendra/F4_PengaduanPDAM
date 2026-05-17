@@ -172,6 +172,9 @@ namespace PengaduanPDAM
                 int rowIndex = dataGridView1.SelectedCells[0].RowIndex;
                 int id = Convert.ToInt32(dataGridView1.Rows[rowIndex].Cells["PengaduanID"].Value);
 
+                if (MessageBox.Show("Yakin ingin menghapus laporan ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+
 
         private void BtnLogout_Click(object sender, EventArgs e)
         {
