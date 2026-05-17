@@ -105,3 +105,7 @@ namespace PengaduanPDAM
                             laporanID = Convert.ToInt32(result);
                         }
                     }
+         
+                    if (laporanID > 0 && !string.IsNullOrEmpty(selectedImagePath))
+                    {
+
