@@ -1,12 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PengaduanPDAM
@@ -14,27 +9,44 @@ namespace PengaduanPDAM
     public partial class FormRiwayat : Form
     {
         string connString = "Data Source=TARA\\TARA;Initial Catalog=DBPengaduanPDAM;Integrated Security=True";
-
         private Label lblDetail;
 
         public FormRiwayat()
         {
             InitializeComponent();
-            this.Load += FormRiwayat_Load;
             button1.Click += BtnCari_Click;
-            button2.Click += BtnKembali_Click;
             dataGridView1.CellClick += DataGridView1_CellClick;
+            btnBatal.Click += btnBatal_Click;
+            btnHapus.Click += btnHapus_Click;
+            btnEdit.Click += btnEdit_Click;
+            
+            this.Load += FormRiwayat_Load;
 
-            // Optional buttons: Edit and Hapus for user if applicable
-            button3.Click += BtnEdit_Click;
-            button4.Click += BtnHapus_Click;
-
-            // Detail Label
             lblDetail = new Label();
             lblDetail.AutoSize = true;
-            lblDetail.Location = new Point(20, dataGridView1.Bottom + 20);
+            lblDetail.Location = new Point(30, dataGridView1.Bottom + 20);
             lblDetail.Font = new Font("Segoe UI", 10F);
+            lblDetail.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             this.Controls.Add(lblDetail);
+
+            StyleDataGridView();
+        }
+
+        private void StyleDataGridView()
+        {
+            dataGridView1.BorderStyle = BorderStyle.None;
+            dataGridView1.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(238, 239, 249);
+            dataGridView1.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            dataGridView1.DefaultCellStyle.SelectionBackColor = Color.DarkTurquoise;
+            dataGridView1.DefaultCellStyle.SelectionForeColor = Color.WhiteSmoke;
+            dataGridView1.BackgroundColor = Color.White;
+            
+            dataGridView1.EnableHeadersVisualStyles = false;
+            dataGridView1.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dataGridView1.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(20, 25, 72);
+            dataGridView1.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dataGridView1.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            dataGridView1.DefaultCellStyle.Font = new Font("Segoe UI", 10F);
         }
 
         private void FormRiwayat_Load(object sender, EventArgs e)
@@ -49,9 +61,8 @@ namespace PengaduanPDAM
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    string query = @"SELECT p.PengaduanID, p.Judul_Laporan, p.KategoriID, p.StatusPengaduan, p.Deskripsi_Laporan, r.Keterangan
-                                     FROM LaporanPengaduan p
-                                     LEFT JOIN RiwayatStatus r ON p.PengaduanID = r.LaporanID
+                    string query = @"SELECT p.PengaduanID, p.Judul_Laporan, p.KategoriID, p.StatusPengaduan, p.Deskripsi_Laporan
+                                     FROM Pengaduan p
                                      WHERE p.UserID = @UserID";
 
                     if (!string.IsNullOrEmpty(searchQuery))
@@ -67,7 +78,6 @@ namespace PengaduanPDAM
                             cmd.Parameters.AddWithValue("@Search", "%" + searchQuery + "%");
                         }
 
-                        // Menggunakan SqlDataReader untuk menampilkan data
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             DataTable dt = new DataTable();
@@ -76,11 +86,8 @@ namespace PengaduanPDAM
                             dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
                         }
 
-                        // Hide description and keterangan column if they take too much space
                         if (dataGridView1.Columns["Deskripsi_Laporan"] != null)
                             dataGridView1.Columns["Deskripsi_Laporan"].Visible = false;
-                        if (dataGridView1.Columns["Keterangan"] != null)
-                            dataGridView1.Columns["Keterangan"].Visible = false;
                     }
                 }
             }
@@ -95,11 +102,6 @@ namespace PengaduanPDAM
             LoadData(textBox1.Text.Trim());
         }
 
-        private void BtnKembali_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
-
         private void DataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
@@ -108,25 +110,133 @@ namespace PengaduanPDAM
                 string judul = row.Cells["Judul_Laporan"].Value?.ToString();
                 string deskripsi = row.Cells["Deskripsi_Laporan"].Value?.ToString();
                 string status = row.Cells["StatusPengaduan"].Value?.ToString();
-                string keterangan = row.Cells["Keterangan"].Value?.ToString();
 
-                lblDetail.Text = $"Judul: {judul}\nDeskripsi: {deskripsi}\nStatus: {status}\nKeterangan Admin: {keterangan}";
-                lblDetail.Top = dataGridView1.Bottom + 10; // Ensure position is correct if resized
-
-                // Pilih data dari DataGridView ke TextBox
+                lblDetail.Text = $"Judul: {judul}\nDeskripsi: {deskripsi}\nStatus: {status}";
+                lblDetail.Top = dataGridView1.Bottom + 10; 
+                
                 textBox1.Text = judul;
             }
         }
 
-        private void BtnEdit_Click(object sender, EventArgs e)
+        private void btnBatal_Click(object sender, EventArgs e)
         {
-            // Edit is only for admin based on specs, but UI has the button. Show message.
-            MessageBox.Show("Fitur Edit hanya dapat diakses melalui Dashboard Admin untuk mengupdate status.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (dataGridView1.SelectedCells.Count > 0)
+            {
+                int rowIndex = dataGridView1.SelectedCells[0].RowIndex;
+                int id = Convert.ToInt32(dataGridView1.Rows[rowIndex].Cells["PengaduanID"].Value);
+                string currentStatus = dataGridView1.Rows[rowIndex].Cells["StatusPengaduan"].Value?.ToString();
+
+                if (currentStatus == "selesai" || currentStatus == "ditolak")
+                {
+                    MessageBox.Show("Laporan yang sudah selesai atau ditolak tidak dapat dibatalkan.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                if (MessageBox.Show("Yakin ingin membatalkan pengaduan ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    try
+                    {
+                        using (SqlConnection conn = new SqlConnection(connString))
+                        {
+                            conn.Open();
+                            
+                            // Update Status
+                            string query = "UPDATE Pengaduan SET StatusPengaduan = 'dibatalkan' WHERE PengaduanID = @ID";
+                            using (SqlCommand cmd = new SqlCommand(query, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@ID", id);
+                                cmd.ExecuteNonQuery();
+                            }
+                            
+                            MessageBox.Show("Pengaduan berhasil dibatalkan.", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadData();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Gagal membatalkan laporan: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Pilih data laporan terlebih dahulu!", "Peringatan");
+            }
         }
 
-        private void BtnHapus_Click(object sender, EventArgs e)
+        private void btnHapus_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Fitur Hapus hanya dapat diakses melalui Dashboard Admin.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (dataGridView1.SelectedCells.Count > 0)
+            {
+                int rowIndex = dataGridView1.SelectedCells[0].RowIndex;
+                int id = Convert.ToInt32(dataGridView1.Rows[rowIndex].Cells["PengaduanID"].Value);
+
+                if (MessageBox.Show("Yakin ingin menghapus secara permanen riwayat pengaduan ini?", "Konfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    try
+                    {
+                        using (SqlConnection conn = new SqlConnection(connString))
+                        {
+                            conn.Open();
+
+                            // Delete dependencies first
+                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Lampiran WHERE PengaduanID=@ID", conn))
+                            {
+                                cmd.Parameters.AddWithValue("@ID", id);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            // Delete Laporan
+                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Pengaduan WHERE PengaduanID=@ID", conn))
+                            {
+                                cmd.Parameters.AddWithValue("@ID", id);
+                                cmd.ExecuteNonQuery();
+                            }
+
+                            MessageBox.Show("Riwayat berhasil dihapus secara permanen!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            LoadData();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Gagal menghapus data: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Pilih data laporan terlebih dahulu!", "Peringatan");
+            }
+        }
+
+        private void btnEdit_Click(object sender, EventArgs e)
+        {
+            if (dataGridView1.SelectedCells.Count > 0)
+            {
+                int rowIndex = dataGridView1.SelectedCells[0].RowIndex;
+                int id = Convert.ToInt32(dataGridView1.Rows[rowIndex].Cells["PengaduanID"].Value);
+                string currentStatus = dataGridView1.Rows[rowIndex].Cells["StatusPengaduan"].Value?.ToString();
+
+                if (currentStatus != "menunggu" && currentStatus != "diproses")
+                {
+                    MessageBox.Show("Hanya laporan dengan status 'menunggu' atau 'diproses' yang bisa diedit.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                string judul = dataGridView1.Rows[rowIndex].Cells["Judul_Laporan"].Value?.ToString();
+                string deskripsi = dataGridView1.Rows[rowIndex].Cells["Deskripsi_Laporan"].Value?.ToString();
+                string kategoriID = dataGridView1.Rows[rowIndex].Cells["KategoriID"].Value?.ToString();
+
+                FormEditPengaduan formEdit = new FormEditPengaduan(id, judul, deskripsi, kategoriID);
+                if (formEdit.ShowDialog() == DialogResult.OK)
+                {
+                    LoadData();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Pilih data laporan terlebih dahulu!", "Peringatan");
+            }
         }
     }
 }

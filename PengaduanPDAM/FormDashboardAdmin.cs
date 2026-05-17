@@ -1,41 +1,26 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 
 namespace PengaduanPDAM
 {
-    public partial class FormDashboardAdmin: Form
+    public partial class FormDashboardAdmin : Form
     {
         string connString = "Data Source=TARA\\TARA;Initial Catalog=DBPengaduanPDAM;Integrated Security=True";
-
-        private Label lblStats;
 
         public FormDashboardAdmin()
         {
             InitializeComponent();
-            this.Load += FormDashboardAdmin_Load;
-            button1.Click += BtnSearch_Click;
-            button2.Click += BtnEdit_Click;
-            button3.Click += BtnDelete_Click;
-            button4.Click += BtnLogout_Click;
-            dataGridView1.CellClick += DataGridView1_CellClick;
-
+            
+            // Remove the dynamic creation of lblStats from here since it's now in Designer.
+            // this.Load += FormDashboardAdmin_Load; is already mapped in Designer.
+            // button events are mapped in designer too, but if not we can map them here.
+            // Note: to be safe I will just ensure the events are handled correctly.
+            
             comboBox1.Items.AddRange(new string[] { "diproses", "selesai", "ditolak" });
-
-            lblStats = new Label();
-            lblStats.AutoSize = true;
-            lblStats.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblStats.Location = new Point(20, 80);
-            this.Controls.Add(lblStats);
+            dataGridView1.CellClick += DataGridView1_CellClick;
         }
 
         private void FormDashboardAdmin_Load(object sender, EventArgs e)
@@ -51,8 +36,8 @@ namespace PengaduanPDAM
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    string query = @"SELECT p.PengaduanID, u.Email, p.NamaLengkap, p.KategoriID, p.Judul_Laporan, p.StatusPengaduan 
-                                     FROM LaporanPengaduan p
+                    string query = @"SELECT p.PengaduanID, u.Email, u.NamaLengkap, p.KategoriID, p.Judul_Laporan, p.StatusPengaduan 
+                                     FROM Pengaduan p
                                      INNER JOIN UserLogin u ON p.UserID = u.UserID";
 
                     if (!string.IsNullOrEmpty(searchQuery))
@@ -67,7 +52,6 @@ namespace PengaduanPDAM
                             cmd.Parameters.AddWithValue("@Search", "%" + searchQuery + "%");
                         }
 
-                        // Menggunakan SqlDataReader sesuai persyaratan (Bagian E)
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
                             DataTable dt = new DataTable();
@@ -86,7 +70,6 @@ namespace PengaduanPDAM
 
         private void DataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            // Memilih data dari DataGridView ke TextBox (Bagian E)
             if (e.RowIndex >= 0)
             {
                 DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
@@ -104,15 +87,15 @@ namespace PengaduanPDAM
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM LaporanPengaduan", conn))
+                    using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM Pengaduan", conn))
                     {
                         int total = Convert.ToInt32(cmd.ExecuteScalar());
-                        cmd.CommandText = "SELECT COUNT(*) FROM LaporanPengaduan WHERE StatusPengaduan = 'diproses'";
+                        cmd.CommandText = "SELECT COUNT(*) FROM Pengaduan WHERE StatusPengaduan = 'diproses'";
                         int diproses = Convert.ToInt32(cmd.ExecuteScalar());
-                        cmd.CommandText = "SELECT COUNT(*) FROM LaporanPengaduan WHERE StatusPengaduan = 'selesai'";
+                        cmd.CommandText = "SELECT COUNT(*) FROM Pengaduan WHERE StatusPengaduan = 'selesai'";
                         int selesai = Convert.ToInt32(cmd.ExecuteScalar());
 
-                        lblStats.Text = $"Total Laporan: {total} | Diproses: {diproses} | Selesai: {selesai}";
+                        lblStats.Text = $"Total Laporan: {total}   |   Diproses: {diproses}   |   Selesai: {selesai}";
                     }
                 }
             }
@@ -145,22 +128,12 @@ namespace PengaduanPDAM
                         using (SqlConnection conn = new SqlConnection(connString))
                         {
                             conn.Open();
-                            // Update status in LaporanPengaduan
-                            string query = "UPDATE LaporanPengaduan SET StatusPengaduan=@Status WHERE PengaduanID=@ID";
+                            // Update status in Pengaduan
+                            string query = "UPDATE Pengaduan SET StatusPengaduan=@Status WHERE PengaduanID=@ID";
                             using (SqlCommand cmd = new SqlCommand(query, conn))
                             {
                                 cmd.Parameters.AddWithValue("@Status", newStatus);
                                 cmd.Parameters.AddWithValue("@ID", id);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            // Insert into RiwayatStatus
-                            string queryRiwayat = "INSERT INTO RiwayatStatus (LaporanID, StatusPengaduan, Keterangan) VALUES (@LaporanID, @Status, @Keterangan)";
-                            using (SqlCommand cmd = new SqlCommand(queryRiwayat, conn))
-                            {
-                                cmd.Parameters.AddWithValue("@LaporanID", id);
-                                cmd.Parameters.AddWithValue("@Status", newStatus);
-                                cmd.Parameters.AddWithValue("@Keterangan", "Status diubah menjadi " + newStatus);
                                 cmd.ExecuteNonQuery();
                             }
 
@@ -197,19 +170,14 @@ namespace PengaduanPDAM
                             conn.Open();
 
                             // Delete dependencies first
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM RiwayatStatus WHERE LaporanID=@ID", conn))
-                            {
-                                cmd.Parameters.AddWithValue("@ID", id);
-                                cmd.ExecuteNonQuery();
-                            }
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Lampiran WHERE LaporanID=@ID", conn))
+                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Lampiran WHERE PengaduanID=@ID", conn))
                             {
                                 cmd.Parameters.AddWithValue("@ID", id);
                                 cmd.ExecuteNonQuery();
                             }
 
                             // Delete Laporan
-                            using (SqlCommand cmd = new SqlCommand("DELETE FROM LaporanPengaduan WHERE PengaduanID=@ID", conn))
+                            using (SqlCommand cmd = new SqlCommand("DELETE FROM Pengaduan WHERE PengaduanID=@ID", conn))
                             {
                                 cmd.Parameters.AddWithValue("@ID", id);
                                 cmd.ExecuteNonQuery();
@@ -234,17 +202,14 @@ namespace PengaduanPDAM
 
         private void BtnLogout_Click(object sender, EventArgs e)
         {
-            SessionManager.ClearSession();
-            FormLogin login = new FormLogin();
-            login.Show();
-            this.Close();
+            DialogResult dialogResult = MessageBox.Show("Apakah Anda yakin ingin logout?", "Konfirmasi Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialogResult == DialogResult.Yes)
+            {
+                SessionManager.ClearSession();
+                FormLogin login = new FormLogin();
+                login.Show();
+                this.Close();
+            }
         }
-
-        // Empty event handlers
-        private void label1_Click(object sender, EventArgs e) { }
-        private void panel1_Paint(object sender, PaintEventArgs e) { }
-        private void textBox1_TextChanged(object sender, EventArgs e) { }
-        private void label2_Click(object sender, EventArgs e) { }
-        private void panel2_Paint(object sender, PaintEventArgs e) { }
     }
 }

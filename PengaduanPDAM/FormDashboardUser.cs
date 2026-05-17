@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System;
 using System.Data.SqlClient;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace PengaduanPDAM
@@ -15,98 +9,89 @@ namespace PengaduanPDAM
     {
         string connString = "Data Source=TARA\\TARA;Initial Catalog=DBPengaduanPDAM;Integrated Security=True";
 
-        private Label lblTotalLaporan;
-
         public FormDashboardUser()
         {
             InitializeComponent();
-
-            // Perbaikan: Form secara tidak sengaja ter-disable di file Designer.
-            this.Enabled = true;
-
-            this.Load += FormDashboardUser_Load;
-
-            // Sembunyikan panel lama karena diganti menjadi Button
-            if (panel2 != null) panel2.Visible = false;
-            if (panel3 != null) panel3.Visible = false;
-
-            // Membuat Button Buat Laporan
-            Button btnBuatLaporan = new Button();
-            btnBuatLaporan.Text = "Buat Laporan Baru";
-            btnBuatLaporan.Size = new Size(200, 60);
-            btnBuatLaporan.Location = new Point(450, 220); // Sesuaikan dengan posisi panel2 sebelumnya
-            btnBuatLaporan.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnBuatLaporan.BackColor = Color.LightBlue;
-            btnBuatLaporan.Click += PanelLaporan_Click;
-            this.Controls.Add(btnBuatLaporan);
-
-            // Membuat Button Riwayat Laporan
-            Button btnLihatRiwayat = new Button();
-            btnLihatRiwayat.Text = "Lihat Riwayat Pengaduan";
-            btnLihatRiwayat.Size = new Size(200, 60);
-            btnLihatRiwayat.Location = new Point(700, 220); // Sesuaikan dengan posisi panel3 sebelumnya
-            btnLihatRiwayat.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            btnLihatRiwayat.BackColor = Color.LightGreen;
-            btnLihatRiwayat.Click += PanelRiwayat_Click;
-            this.Controls.Add(btnLihatRiwayat);
-
-            // Logout
-            button1.Click += BtnLogout_Click;
-
-            // Create stats label
-            lblTotalLaporan = new Label();
-            lblTotalLaporan.AutoSize = true;
-            lblTotalLaporan.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblTotalLaporan.Location = new Point(20, 80);
-            this.Controls.Add(lblTotalLaporan);
         }
+
         private void FormDashboardUser_Load(object sender, EventArgs e)
         {
-            LoadTotalLaporan();
+            LoadUserName();
         }
 
-        private void LoadTotalLaporan()
+        private void LoadUserName()
         {
             try
             {
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    string query = "SELECT COUNT(*) FROM LaporanPengaduan WHERE UserID = @UserID";
+                    // Assume table UserLogin and column Nama
+                    // If NamaLengkap doesn't exist, we fall back to Email.
+                    string query = "SELECT NamaLengkap FROM UserLogin WHERE UserID = @UserID";
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
-                        int total = Convert.ToInt32(cmd.ExecuteScalar());
-                        lblTotalLaporan.Text = $"Total Laporan Anda: {total}";
+                        object result = null;
+                        try 
+                        {
+                            result = cmd.ExecuteScalar();
+                        }
+                        catch 
+                        {
+                            // In case 'Nama' column doesn't exist, ignore the query error
+                        }
+
+                        if (result != null && result != DBNull.Value)
+                        {
+                            lblWelcome.Text = "Selamat datang, " + result.ToString();
+                        }
+                        else
+                        {
+                            lblWelcome.Text = "Selamat datang, " + SessionManager.Email;
+                        }
                     }
                 }
             }
-            catch { }
-        }
-        private void PanelLaporan_Click(object sender, EventArgs e)
-        {
-            FormPengaduan formPengaduan = new FormPengaduan();
-            formPengaduan.ShowDialog();
-            LoadTotalLaporan(); // Refresh total when returning
+            catch (Exception)
+            {
+                lblWelcome.Text = "Selamat datang, " + SessionManager.Email;
+            }
         }
 
-        private void PanelRiwayat_Click(object sender, EventArgs e)
+        private void LoadFormIntoPanel(Form childForm)
         {
-            FormRiwayat formRiwayat = new FormRiwayat();
-            formRiwayat.ShowDialog();
+            if (this.panelMain.Controls.Count > 0)
+                this.panelMain.Controls[0].Dispose(); // Dispose previous form to prevent memory leaks
+
+            childForm.TopLevel = false;
+            childForm.FormBorderStyle = FormBorderStyle.None;
+            childForm.Dock = DockStyle.Fill;
+            this.panelMain.Controls.Clear();
+            this.panelMain.Controls.Add(childForm);
+            childForm.Show();
         }
 
-        private void BtnLogout_Click(object sender, EventArgs e)
+        private void btnInputPengaduan_Click(object sender, EventArgs e)
         {
-            SessionManager.ClearSession();
-            FormLogin login = new FormLogin();
-            login.Show();
-            this.Close();
+            LoadFormIntoPanel(new FormPengaduan());
         }
 
-        private void label2_Click(object sender, EventArgs e) { }
-        private void label4_Click(object sender, EventArgs e) { }
+        private void btnRiwayatPengaduan_Click(object sender, EventArgs e)
+        {
+            LoadFormIntoPanel(new FormRiwayat());
+        }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            DialogResult dialogResult = MessageBox.Show("Apakah Anda yakin ingin logout?", "Konfirmasi Logout", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (dialogResult == DialogResult.Yes)
+            {
+                SessionManager.ClearSession();
+                FormLogin formLogin = new FormLogin();
+                formLogin.Show();
+                this.Hide();
+            }
+        }
     }
 }
-
-

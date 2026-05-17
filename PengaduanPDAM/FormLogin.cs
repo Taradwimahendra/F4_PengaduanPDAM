@@ -20,9 +20,15 @@ namespace PengaduanPDAM
         {
             InitializeComponent();
 
-            BtnLogin.Click += BtnLogin_Click;
-            button2.Click += BtnCekKoneksi_Click;
             textBox2.PasswordChar = '*';
+            button1.Click += BtnRegister_Click;
+        }
+
+        private void BtnRegister_Click(object sender, EventArgs e)
+        {
+            FormRegister formReg = new FormRegister();
+            formReg.Show();
+            this.Hide();
         }
 
 
@@ -43,55 +49,41 @@ namespace PengaduanPDAM
                 {
                     conn.Open();
 
-
-                    string queryAdmin = @"
-                        SELECT AdminID 
-                        FROM AdminLogin 
-                        WHERE LOWER(Email)=LOWER(@Email) 
-                        AND Password=@Password";
-
-                    using (SqlCommand cmd = new SqlCommand(queryAdmin, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@Email", email);
-                        cmd.Parameters.AddWithValue("@Password", password);
-
-                        object result = cmd.ExecuteScalar();
-
-                        if (result != null)
-                        {
-                            SessionManager.UserID = Convert.ToInt32(result);
-                            SessionManager.Email = email;
-                            SessionManager.Role = "Admin";
-
-                            new FormDashboardAdmin().Show();
-                            this.Hide();
-                            return;
-                        }
-                    }
-
-
-                    string queryUser = @"
-                        SELECT UserID 
+                    string query = @"
+                        SELECT UserID, RoleUser 
                         FROM UserLogin 
                         WHERE LOWER(Email)=LOWER(@Email) 
                         AND Password=@Password";
 
-                    using (SqlCommand cmd = new SqlCommand(queryUser, conn))
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@Email", email);
                         cmd.Parameters.AddWithValue("@Password", password);
 
-                        object result = cmd.ExecuteScalar();
-
-                        if (result != null)
+                        using (SqlDataReader reader = cmd.ExecuteReader())
                         {
-                            SessionManager.UserID = Convert.ToInt32(result);
-                            SessionManager.Email = email;
-                            SessionManager.Role = "User";
+                            if (reader.Read())
+                            {
+                                int userId = reader.GetInt32(0);
+                                string role = reader.IsDBNull(1) ? "pelanggan" : reader.GetString(1).ToLower();
 
-                            new FormDashboardUser().Show();
-                            this.Hide();
-                            return;
+                                SessionManager.UserID = userId;
+                                SessionManager.Email = email;
+
+                                if (role == "admin")
+                                {
+                                    SessionManager.Role = "Admin";
+                                    new FormDashboardAdmin().Show();
+                                }
+                                else
+                                {
+                                    SessionManager.Role = "User";
+                                    new FormDashboardUser().Show();
+                                }
+
+                                this.Hide();
+                                return;
+                            }
                         }
                     }
 
@@ -124,5 +116,10 @@ namespace PengaduanPDAM
 
         private void label1_Click(object sender, EventArgs e) { }
         private void label3_Click(object sender, EventArgs e) { }
+
+        private void label3_Click_1(object sender, EventArgs e)
+        {
+
+        }
     }
 }
