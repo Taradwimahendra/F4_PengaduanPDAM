@@ -203,6 +203,13 @@ namespace PengaduanPDAM
                 }
             }
 
+            else
+            {
+                MessageBox.Show("Pilih data laporan terlebih dahulu!", "Peringatan");
+            }
+        }
+
+
 
 
         private void BtnLogout_Click(object sender, EventArgs e)
