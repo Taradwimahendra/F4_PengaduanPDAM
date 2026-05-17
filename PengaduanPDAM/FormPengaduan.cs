@@ -82,3 +82,26 @@ namespace PengaduanPDAM
                 MessageBox.Show("Harap lampirkan foto bukti laporan terlebih dahulu!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            try
+            {
+                int katId = kategori.Equals("Teknis", StringComparison.OrdinalIgnoreCase) ? 1 : 2;
+
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    int laporanID = 0;
+
+                    using (SqlCommand cmd = new SqlCommand("sp_InsertPengaduan", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
+                        cmd.Parameters.AddWithValue("@KategoriID", katId);
+                        cmd.Parameters.AddWithValue("@Judul_Laporan", judul);
+                        cmd.Parameters.AddWithValue("@Deskripsi_Laporan", deskripsi);
+
+                        object result = cmd.ExecuteScalar();
+                        if (result != null)
+                        {
+                            laporanID = Convert.ToInt32(result);
+                        }
+                    }
