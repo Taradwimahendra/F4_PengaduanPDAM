@@ -115,25 +115,8 @@ namespace PengaduanPDAM
                     using (SqlCommand cmd = new SqlCommand("sp_CountPengaduanUser", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-                        
+
                         cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
-
-                        SqlParameter outputParam = new SqlParameter("@Total", SqlDbType.Int);
-                        outputParam.Direction = ParameterDirection.Output;
-                        cmd.Parameters.Add(outputParam);
-
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-
-                        lblTotal.Text = "Total Pengaduan: " + outputParam.Value.ToString();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Gagal menghitung total: " + ex.Message, "Error");
-            }
-        }
 
         private void BtnCari_Click(object sender, EventArgs e)
         {
