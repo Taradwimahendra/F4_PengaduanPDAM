@@ -108,4 +108,21 @@ namespace PengaduanPDAM
          
                     if (laporanID > 0 && !string.IsNullOrEmpty(selectedImagePath))
                     {
+                        try
+                        {
+                            string queryLampiran = "INSERT INTO Lampiran (PengaduanID, NamaFile, PathFile) VALUES (@PengaduanID, @NamaFile, @PathFile)";
+                            using (SqlCommand cmdLampiran = new SqlCommand(queryLampiran, conn))
+                            {
+                                cmdLampiran.Parameters.AddWithValue("@PengaduanID", laporanID);
+                                cmdLampiran.Parameters.AddWithValue("@NamaFile", Path.GetFileName(selectedImagePath));
+                                cmdLampiran.Parameters.AddWithValue("@PathFile", selectedImagePath);
+                                cmdLampiran.ExecuteNonQuery();
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            // Ignore missing table gently
+                            MessageBox.Show("Pengaduan berhasil disimpan, namun lampiran gagal diunggah.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+
 
