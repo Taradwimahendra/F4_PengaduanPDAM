@@ -126,3 +126,27 @@ namespace PengaduanPDAM
                         }
 
 
+
+
+                    }
+
+                    MessageBox.Show("Pengaduan berhasil dikirim!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // Reset Form
+                    txtNama.Clear();
+                    txtJudul.Clear();
+                    cmbKategori.SelectedIndex = -1;
+                    txtDeskripsi.Clear();
+                    pictureBox1.Image = null;
+                    lblFileName.Text = "Tidak ada file dipilih";
+                    selectedImagePath = "";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Terjadi kesalahan saat menyimpan: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+}
+
