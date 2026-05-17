@@ -70,3 +70,15 @@ namespace PengaduanPDAM
             string judul = txtJudul.Text.Trim();
             string kategori = cmbKategori.Text;
             string deskripsi = txtDeskripsi.Text.Trim();
+
+            if (string.IsNullOrEmpty(namaLengkap) || string.IsNullOrEmpty(judul) || string.IsNullOrEmpty(kategori) || string.IsNullOrEmpty(deskripsi))
+            {
+                MessageBox.Show("Semua kolom teks harus diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(selectedImagePath))
+            {
+                MessageBox.Show("Harap lampirkan foto bukti laporan terlebih dahulu!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
