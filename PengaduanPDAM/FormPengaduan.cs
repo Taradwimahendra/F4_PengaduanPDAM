@@ -18,7 +18,7 @@ namespace PengaduanPDAM
             btnSubmit.Click += BtnSubmit_Click;
             btnUpload.Click += BtnUpload_Click;
             
-            // Setup Categories
+            
             cmbKategori.Items.AddRange(new string[] { "Teknis", "Non Teknis" });
             cmbKategori.DropDownStyle = ComboBoxStyle.DropDownList;
             
@@ -121,7 +121,7 @@ namespace PengaduanPDAM
                         }
                         catch (Exception)
                         {
-                            // Ignore missing table gently
+                            
                             MessageBox.Show("Pengaduan berhasil disimpan, namun lampiran gagal diunggah.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
 
@@ -132,7 +132,7 @@ namespace PengaduanPDAM
 
                     MessageBox.Show("Pengaduan berhasil dikirim!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    // Reset Form
+                    
                     txtNama.Clear();
                     txtJudul.Clear();
                     cmbKategori.SelectedIndex = -1;
