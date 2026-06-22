@@ -12,16 +12,15 @@ namespace PengaduanPDAM
         string connString = "Data Source=TARA\\TARA;Initial Catalog=DBPengaduanPDAM;Integrated Security=True";
         private string selectedImagePath = "";
 
-        public FormPengaduan()
+        public FormPengaduan()  
         {
             InitializeComponent();
             btnSubmit.Click += BtnSubmit_Click;
             btnUpload.Click += BtnUpload_Click;
-            
-            
+
             cmbKategori.Items.AddRange(new string[] { "Teknis", "Non Teknis" });
             cmbKategori.DropDownStyle = ComboBoxStyle.DropDownList;
-            
+
             this.Load += FormPengaduan_Load;
         }
 
@@ -32,7 +31,9 @@ namespace PengaduanPDAM
                 using (SqlConnection conn = new SqlConnection(connString))
                 {
                     conn.Open();
-                    using (SqlCommand cmd = new SqlCommand("SELECT NamaLengkap FROM UserLogin WHERE UserID=@ID", conn))
+                    // Parameterized query untuk ambil nama user yang sedang login
+                    using (SqlCommand cmd = new SqlCommand(
+                        "SELECT NamaLengkap FROM UserLogin WHERE UserID=@ID", conn))
                     {
                         cmd.Parameters.AddWithValue("@ID", SessionManager.UserID);
                         object result = cmd.ExecuteScalar();
@@ -53,100 +54,140 @@ namespace PengaduanPDAM
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
                 ofd.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp";
-                ofd.Title = "Pilih Gambar Bukti Laporan";
+                ofd.Title  = "Pilih Gambar Bukti Laporan";
 
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     selectedImagePath = ofd.FileName;
-                    lblFileName.Text = Path.GetFileName(selectedImagePath);
+                    lblFileName.Text  = Path.GetFileName(selectedImagePath);
                     pictureBox1.Image = Image.FromFile(selectedImagePath);
                 }
             }
         }
 
+        // =====================================================================
+        // BtnSubmit - SP sp_InsertPengaduan + SqlTransaction + SimpanLog
+        // =====================================================================
         private void BtnSubmit_Click(object sender, EventArgs e)
         {
             string namaLengkap = txtNama.Text.Trim();
-            string judul = txtJudul.Text.Trim();
-            string kategori = cmbKategori.Text;
-            string deskripsi = txtDeskripsi.Text.Trim();
+            string judul       = txtJudul.Text.Trim();
+            string kategori    = cmbKategori.Text;
+            string deskripsi   = txtDeskripsi.Text.Trim();
 
-            if (string.IsNullOrEmpty(namaLengkap) || string.IsNullOrEmpty(judul) || string.IsNullOrEmpty(kategori) || string.IsNullOrEmpty(deskripsi))
+            if (string.IsNullOrEmpty(namaLengkap) || string.IsNullOrEmpty(judul) ||
+                string.IsNullOrEmpty(kategori)    || string.IsNullOrEmpty(deskripsi))
             {
-                MessageBox.Show("Semua kolom teks harus diisi!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Semua kolom teks harus diisi!", "Peringatan",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (string.IsNullOrEmpty(selectedImagePath))
             {
-                MessageBox.Show("Harap lampirkan foto bukti laporan terlebih dahulu!", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Harap lampirkan foto bukti laporan terlebih dahulu!", "Peringatan",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            int katId = kategori.Equals("Teknis", StringComparison.OrdinalIgnoreCase) ? 1 : 2;
+
+            SqlConnection conn = new SqlConnection(connString);
+            conn.Open();
+            SqlTransaction trans = conn.BeginTransaction();
+
             try
             {
-                int katId = kategori.Equals("Teknis", StringComparison.OrdinalIgnoreCase) ? 1 : 2;
+                // Memanggil SP sp_InsertPengaduan
+                SqlCommand cmd = new SqlCommand("sp_InsertPengaduan", conn, trans);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@UserID",           SessionManager.UserID);
+                cmd.Parameters.AddWithValue("@KategoriID",       katId);
+                cmd.Parameters.AddWithValue("@Judul_Laporan",    judul);
+                cmd.Parameters.AddWithValue("@Deskripsi_Laporan", deskripsi);
+                cmd.ExecuteNonQuery();
 
-                using (SqlConnection conn = new SqlConnection(connString))
+                // Ambil PengaduanID yang baru diinsert dalam transaksi ini
+                // CATATAN: @@IDENTITY tidak bisa dipakai karena trigger trg_InsertPengaduan
+                //          menyebabkan @@IDENTITY berubah ke ID LogAktivitas, bukan PengaduanID.
+                //          Solusi: SELECT MAX(PengaduanID) dalam transaksi yang sama.
+                SqlCommand cmdGetId = new SqlCommand(
+                    "SELECT MAX(PengaduanID) FROM Pengaduan WHERE UserID = @UserID",
+                    conn, trans);
+                cmdGetId.Parameters.AddWithValue("@UserID", SessionManager.UserID);
+                int laporanID = Convert.ToInt32(cmdGetId.ExecuteScalar());
+
+                // Insert lampiran dalam transaksi yang sama
+                if (laporanID > 0 && !string.IsNullOrEmpty(selectedImagePath))
                 {
-                    conn.Open();
-                    int laporanID = 0;
-
-                    using (SqlCommand cmd = new SqlCommand("sp_InsertPengaduan", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@UserID", SessionManager.UserID);
-                        cmd.Parameters.AddWithValue("@KategoriID", katId);
-                        cmd.Parameters.AddWithValue("@Judul_Laporan", judul);
-                        cmd.Parameters.AddWithValue("@Deskripsi_Laporan", deskripsi);
-
-                        object result = cmd.ExecuteScalar();
-                        if (result != null)
-                        {
-                            laporanID = Convert.ToInt32(result);
-                        }
-                    }
-         
-                    if (laporanID > 0 && !string.IsNullOrEmpty(selectedImagePath))
-                    {
-                        try
-                        {
-                            string queryLampiran = "INSERT INTO Lampiran (PengaduanID, NamaFile, PathFile) VALUES (@PengaduanID, @NamaFile, @PathFile)";
-                            using (SqlCommand cmdLampiran = new SqlCommand(queryLampiran, conn))
-                            {
-                                cmdLampiran.Parameters.AddWithValue("@PengaduanID", laporanID);
-                                cmdLampiran.Parameters.AddWithValue("@NamaFile", Path.GetFileName(selectedImagePath));
-                                cmdLampiran.Parameters.AddWithValue("@PathFile", selectedImagePath);
-                                cmdLampiran.ExecuteNonQuery();
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            
-                            MessageBox.Show("Pengaduan berhasil disimpan, namun lampiran gagal diunggah.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-
-
-
-
-                    }
-
-                    MessageBox.Show("Pengaduan berhasil dikirim!", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    
-                    txtNama.Clear();
-                    txtJudul.Clear();
-                    cmbKategori.SelectedIndex = -1;
-                    txtDeskripsi.Clear();
-                    pictureBox1.Image = null;
-                    lblFileName.Text = "Tidak ada file dipilih";
-                    selectedImagePath = "";
+                    SqlCommand cmdLampiran = new SqlCommand(
+                        "INSERT INTO Lampiran (PengaduanID, NamaFile, PathFile) " +
+                        "VALUES (@PengaduanID, @NamaFile, @PathFile)",
+                        conn, trans);
+                    cmdLampiran.Parameters.AddWithValue("@PengaduanID", laporanID);
+                    cmdLampiran.Parameters.AddWithValue("@NamaFile",    Path.GetFileName(selectedImagePath));
+                    cmdLampiran.Parameters.AddWithValue("@PathFile",    selectedImagePath);
+                    cmdLampiran.ExecuteNonQuery();
                 }
+
+                // Log aktivitas ke LogAktivitas
+                SqlCommand cmdLog = new SqlCommand(
+                    "INSERT INTO LogAktivitas (aktivitas,waktu) VALUES (@aktivitas,GETDATE())",
+                    conn, trans);
+                cmdLog.Parameters.AddWithValue("@aktivitas",
+                    "INSERT PENGADUAN oleh UserID: " + SessionManager.UserID + " - " + judul);
+                cmdLog.ExecuteNonQuery();
+
+                trans.Commit();
+
+                MessageBox.Show("Pengaduan berhasil dikirim!", "Sukses",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Reset form
+                txtNama.Clear();
+                txtJudul.Clear();
+                cmbKategori.SelectedIndex = -1;
+                txtDeskripsi.Clear();
+                pictureBox1.Image = null;
+                lblFileName.Text  = "Tidak ada file dipilih";
+                selectedImagePath = "";
+            }
+            catch (SqlException ex)
+            {
+                trans.Rollback();
+                SimpanLog("ROLLBACK INSERT PENGADUAN : " + ex.Message);
+                MessageBox.Show(ex.Message, "Gagal", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Terjadi kesalahan saat menyimpan: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                trans.Rollback();
+                SimpanLog("GENERAL ERROR INSERT : " + ex.Message);
+                MessageBox.Show(ex.Message);
             }
+            finally
+            {
+                conn.Close();
+            }
+        }
+
+        // =====================================================================
+        // SimpanLog - Helper log ke LogAktivitas (koneksi terpisah)
+        // =====================================================================
+        private void SimpanLog(string aktivitas)
+        {
+            try
+            {
+                using (SqlConnection connLog = new SqlConnection(connString))
+                {
+                    connLog.Open();
+                    SqlCommand cmdLog = new SqlCommand(
+                        "INSERT INTO LogAktivitas (aktivitas,waktu) VALUES (@aktivitas,GETDATE())",
+                        connLog);
+                    cmdLog.Parameters.AddWithValue("@aktivitas", aktivitas);
+                    cmdLog.ExecuteNonQuery();
+                }
+            }
+            catch { /* abaikan error logging */ }
         }
     }
 }
-

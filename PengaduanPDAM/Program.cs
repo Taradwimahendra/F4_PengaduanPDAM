@@ -8,7 +8,11 @@ namespace PengaduanPDAM
 {
     internal static class Program
     {
-       
+        // Variabel global sebagai pengganti SessionManager
+        public static int UserID;
+        public static string Email;
+        public static string Role;
+
         [STAThread]
         static void Main()
         {

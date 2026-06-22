@@ -34,7 +34,7 @@ namespace PengaduanPDAM
 
         private void BtnLogin_Click(object sender, EventArgs e)
         {
-            string email = textBox1.Text.Trim();
+            string email    = textBox1.Text.Trim();
             string password = textBox2.Text.Trim();
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
@@ -43,58 +43,102 @@ namespace PengaduanPDAM
                 return;
             }
 
+            SqlConnection conn = new SqlConnection(connString);
+            conn.Open();
+
+            SqlTransaction trans = conn.BeginTransaction();
+
             try
             {
-                using (SqlConnection conn = new SqlConnection(connString))
+                // Panggil Stored Procedure sp_LoginUser
+                SqlCommand cmd = new SqlCommand("sp_LoginUser", conn, trans);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@Email",    email);
+                cmd.Parameters.AddWithValue("@Password", password);
+
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                if (reader.Read())
                 {
-                    conn.Open();
+                    int    userId = reader.GetInt32(0);
+                    string nama   = reader.GetString(1);
+                    string role   = reader.IsDBNull(2) ? "pelanggan"
+                                                       : reader.GetString(2).ToLower();
+                    reader.Close();
 
-                    string query = @"
-                        SELECT UserID, RoleUser 
-                        FROM UserLogin 
-                        WHERE LOWER(Email)=LOWER(@Email) 
-                        AND Password=@Password";
+                    SessionManager.UserID = userId;
+                    SessionManager.Email  = email;
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    // Log aktivitas login berhasil ke LogAktivitas
+                    SqlCommand cmdLog = new SqlCommand(
+                        "INSERT INTO LogAktivitas (aktivitas,waktu) VALUES (@aktivitas,GETDATE())",
+                        conn, trans);
+                    cmdLog.Parameters.AddWithValue("@aktivitas", "LOGIN BERHASIL : " + email);
+                    cmdLog.ExecuteNonQuery();
+
+                    trans.Commit();
+
+                    MessageBox.Show("Login berhasil! Selamat datang, " + nama);
+
+                    if (role == "admin")
                     {
-                        cmd.Parameters.AddWithValue("@Email", email);
-                        cmd.Parameters.AddWithValue("@Password", password);
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                int userId = reader.GetInt32(0);
-                                string role = reader.IsDBNull(1) ? "pelanggan" : reader.GetString(1).ToLower();
-
-                                SessionManager.UserID = userId;
-                                SessionManager.Email = email;
-
-                                if (role == "admin")
-                                {
-                                    SessionManager.Role = "Admin";
-                                    new FormDashboardAdmin().Show();
-                                }
-                                else
-                                {
-                                    SessionManager.Role = "User";
-                                    new FormDashboardUser().Show();
-                                }
-
-                                this.Hide();
-                                return;
-                            }
-                        }
+                        SessionManager.Role = "Admin";
+                        new FormDashboardAdmin().Show();
+                    }
+                    else
+                    {
+                        SessionManager.Role = "User";
+                        new FormDashboardUser().Show();
                     }
 
-                    MessageBox.Show("Email atau Password salah!", "Error");
+                    this.Hide();
                 }
+                else
+                {
+                    reader.Close();
+                    trans.Rollback();
+                    SimpanLog("LOGIN GAGAL : " + email);
+                    MessageBox.Show("Email atau Password salah!", "Login Gagal",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (SqlException ex)
+            {
+                trans.Rollback();
+                SimpanLog("ROLLBACK LOGIN : " + ex.Message);
+                MessageBox.Show(ex.Message);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Terjadi kesalahan: " + ex.Message);
+                trans.Rollback();
+                SimpanLog("GENERAL ERROR : " + ex.Message);
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                conn.Close();
             }
         }
+
+        // Helper: simpan log error ke tabel LogAktivitas (koneksi terpisah)
+        private void SimpanLog(string aktivitas)
+        {
+            try
+            {
+                using (SqlConnection connLog = new SqlConnection(connString))
+                {
+                    connLog.Open();
+                    SqlCommand cmdLog = new SqlCommand(
+                        "INSERT INTO LogAktivitas (aktivitas,waktu) VALUES (@aktivitas,GETDATE())",
+                        connLog);
+                    cmdLog.Parameters.AddWithValue("@aktivitas", aktivitas);
+                    cmdLog.ExecuteNonQuery();
+                }
+            }
+            catch { /* abaikan error logging */ }
+        }
+
 
 
         private void BtnCekKoneksi_Click(object sender, EventArgs e)
@@ -114,7 +158,61 @@ namespace PengaduanPDAM
         }
 
 
+ 
+        private void btnTestInjection_Click(object sender, EventArgs e)
+        {
+            // Payload SQL Injection - hardcoded agar langsung jalan tanpa perlu isi textBox
+            string payloadEmail    = "' OR '1'='1'--";
+            string payloadPassword = "";
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(connString))
+                {
+                    conn.Open();
+                    string queryRentan =
+                        "SELECT COUNT(*) FROM UserLogin " +
+                        "WHERE Email = '" + payloadEmail + "' " +
+                        "AND Password = '" + payloadPassword + "'";
+
+                    using (SqlCommand cmdInject = new SqlCommand(queryRentan, conn))
+                    {
+                        int hasil = Convert.ToInt32(cmdInject.ExecuteScalar());
+
+                        if (hasil > 0)
+                        {
+                            MessageBox.Show(
+                                "⚠️ LOGIN BERHASIL tanpa password!\n\n",
+                                "SQL Injection Berhasil",
+                                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                            FormDashboardUser formData = new FormDashboardUser();
+                            formData.Show();
+                            this.Hide();
+                        }
+                        else
+                        {
+                            MessageBox.Show(
+                                "Injection tidak berhasil. Tabel kosong atau query tidak cocok.",
+                                "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message);
+            }
+        }
+
+       
+
         private void label1_Click(object sender, EventArgs e) { }
         private void label3_Click(object sender, EventArgs e) { }
     }
 }
+
+
+
+
+ 
